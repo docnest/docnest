@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Application code.
 COPY app ./app
+COPY scripts ./scripts
 
 # The SQLite database lives on a mounted volume so data survives rebuilds.
 RUN mkdir -p /data
