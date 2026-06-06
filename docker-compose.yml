@@ -17,12 +17,18 @@ services:
       DOCNEST_ADMIN_USER: ${DOCNEST_ADMIN_USER:-admin}
       DOCNEST_ADMIN_PASS: ${DOCNEST_ADMIN_PASS:?set a strong admin password in .env}
       DOCNEST_SECRET: ${DOCNEST_SECRET:?set a random session secret in .env}
-      DOCNEST_DEFAULT_FEE: ${DOCNEST_DEFAULT_FEE:-1000}
+      DOCNEST_DEFAULT_FEE: ${DOCNEST_DEFAULT_FEE:-2000}
+      DOCNEST_DAILY_RATE: ${DOCNEST_DAILY_RATE:-299}
+      DOCNEST_DEFAULT_CAUTION: ${DOCNEST_DEFAULT_CAUTION:-0}
+      DOCNEST_REMINDER_DAYS: ${DOCNEST_REMINDER_DAYS:-10}
+      DOCNEST_COUNTRY_CODE: ${DOCNEST_COUNTRY_CODE:-91}
       DOCNEST_BUSINESS_NAME: ${DOCNEST_BUSINESS_NAME:-DocNest Study Space}
       DOCNEST_CURRENCY: ${DOCNEST_CURRENCY:-₹}
       DOCNEST_DB: /data/docnest.db
     volumes:
-      - docnest-data:/data
+      # Live SQLite DB lives on the host at ./data/docnest.db (bind mount), so
+      # it can be backed up with a plain file copy — no docker cp needed.
+      - ./data:/data
     ports:
       # Local-only admin access; public traffic comes via the tunnel.
       - "127.0.0.1:8000:8000"
@@ -41,6 +47,3 @@ services:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
     depends_on:
       - app
-
-volumes:
-  docnest-data:
