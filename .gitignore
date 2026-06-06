@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# SQLite databases and backups (generated at runtime / by migrations)
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets / local env
+.env
+
+# Editor / OS noise
+.DS_Store

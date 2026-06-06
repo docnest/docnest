@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>docnest — Admin Login</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <header class="login-header">
+      <h1>docnest</h1>
+      <p class="subtitle">Study-space seat booking — Admin</p>
+    </header>
+
+    {% if error %}
+    <div class="login-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="login-form" method="post" action="/admin/login">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" autocomplete="username" required autofocus />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required />
+
+      <button type="submit" class="btn-primary">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>

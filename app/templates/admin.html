@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocNest — Admin</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body class="admin-page">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1>DocNest <span class="badge-admin">admin</span></h1>
+      <p class="subtitle">Members &amp; seat management</p>
+    </div>
+    <nav class="header-nav">
+      <a class="ghost-link" href="/admin/invoices">Invoices</a>
+      <a class="ghost-link" href="/" target="_blank">Student view ↗</a>
+      <a class="logout-link" href="/admin/logout">Log out</a>
+    </nav>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><span class="stat-num">{{ stats.total_seats }}</span><span class="stat-label">Seats</span></div>
+    <div class="stat"><span class="stat-num">{{ stats.occupied }}</span><span class="stat-label">Occupied</span></div>
+    <div class="stat stat-free"><span class="stat-num">{{ stats.free }}</span><span class="stat-label">Free</span></div>
+    <div class="stat stat-warn"><span class="stat-num">{{ stats.expiring }}</span><span class="stat-label">Expiring ≤14d</span></div>
+    <div class="stat stat-danger"><span class="stat-num">{{ stats.expired }}</span><span class="stat-label">Expired</span></div>
+  </section>
+
+  <main class="admin-main">
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Seating arrangement</h2>
+        <ul class="legend" aria-label="Seat legend">
+          <li class="legend-item"><span class="swatch swatch-available"></span>Free</li>
+          <li class="legend-item"><span class="swatch swatch-booked"></span>Occupied</li>
+          <li class="legend-item"><span class="swatch swatch-expired"></span>Expired</li>
+        </ul>
+      </div>
+      <div class="floor-plan">
+        {% for room in floor_plan %}
+        <section class="floor-room" data-room="{{ room.room }}">
+          <h3 class="floor-room-title">{{ room.room }}</h3>
+          <div class="floor-grid"
+               style="grid-template-columns: repeat({{ room.cols }}, 1fr); grid-template-rows: repeat({{ room.rows }}, 1fr);">
+            {% for seat in room.cells %}
+            {% if seat.status == 'available' %}
+            <a class="floor-seat available"
+               href="/admin#seat-{{ seat.code }}"
+               style="grid-column: {{ seat.col }}; grid-row: {{ seat.row }};"
+               title="{{ seat.code }} · Free — click to assign">{{ seat.code }}</a>
+            {% else %}
+            <a class="floor-seat {{ seat.status }}"
+               href="/admin/member/{{ seat.member_id }}"
+               style="grid-column: {{ seat.col }}; grid-row: {{ seat.row }};"
+               title="{{ seat.code }} · {{ seat.booked_by }}{% if seat.status == 'expired' %} (expired){% endif %}">
+              <span class="floor-seat-code">{{ seat.code }}</span>
+              <span class="floor-seat-name">{{ seat.booked_by }}</span>
+            </a>
+            {% endif %}
+            {% endfor %}
+            {% for door in room.doors %}
+            <span class="floor-door" style="grid-column: {{ door.col }}; grid-row: {{ door.row }};" title="Entrance">⌞ door</span>
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">
+        Renewals due
+        <span class="muted-cell" style="font-weight:400;font-size:0.8rem;">· next {{ reminder_days }} days</span>
+        <span class="count-chip">{{ reminders | length }}</span>
+      </h2>
+      {% if not reminders %}
+        <p class="muted-cell">No memberships expiring in the next {{ reminder_days }} days.</p>
+      {% else %}
+      <div class="table-wrap">
+        <table class="data-table reminders-table">
+          <thead>
+            <tr>
+              <th>Seat</th><th>Name</th><th>Phone</th><th>Expires</th>
+              <th>Left</th><th>Reminder</th><th class="col-actions">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reminders %}
+            <tr data-member="{{ r.id }}">
+              <td class="seat-cell">{{ r.seat_code }}</td>
+              <td><a class="member-link" href="/admin/member/{{ r.id }}">{{ r.name }}</a></td>
+              <td class="muted-cell">{{ r.phone or "—" }}</td>
+              <td>{{ r.expiration_date | dmy }}</td>
+              <td>
+                {% if r.days_left == 0 %}<span class="pill pill-danger">today</span>
+                {% elif r.days_left == 1 %}<span class="pill pill-warn">1 day</span>
+                {% else %}<span class="pill pill-warn">{{ r.days_left }} days</span>{% endif %}
+              </td>
+              <td class="reminder-status">
+                {% if r.reminded %}<span class="pill pill-ok">Reminded ✓</span>
+                {% else %}<span class="pill">Not sent</span>{% endif %}
+              </td>
+              <td class="col-actions">
+                {% if r.wa_link %}
+                <form method="post" action="/admin/member/{{ r.id }}/remind"
+                      target="_blank" class="remind-form" data-wa="{{ r.wa_link }}">
+                  <button type="submit" class="btn btn-sm btn-wa">
+                    {% if r.reminded %}Send again{% else %}WhatsApp reminder{% endif %}
+                  </button>
+                </form>
+                {% else %}
+                <span class="muted-cell" title="No phone number on file">No phone</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Members</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Seat</th><th>Name</th><th>Start</th><th>Expires</th>
+              <th>Status</th><th class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in members %}
+            <tr class="row-{{ m.status_label }}">
+              <td class="seat-cell">{{ m.seat_code }}</td>
+              <td>
+                <a class="member-link" href="/admin/member/{{ m.id }}">{{ m.name }}</a>
+              </td>
+              <td class="muted-cell">{{ m.start_date | dmy or "—" }}</td>
+              <td>{{ m.expiration_date | dmy or "—" }}</td>
+              <td>
+                {% if m.status_label == 'expired' %}
+                  <span class="pill pill-danger">Expired</span>
+                {% elif m.status_label == 'booked' %}
+                  <span class="pill pill-ok">Active</span>
+                {% else %}
+                  <span class="pill">{{ m.status_label }}</span>
+                {% endif %}
+              </td>
+              <td class="col-actions">
+                <a class="btn btn-sm btn-primary" href="/admin/member/{{ m.id }}">Renew / Receipt</a>
+                <a class="btn btn-sm btn-ghost" href="/admin/member/{{ m.id }}#edit">Edit</a>
+                <form method="post" action="/admin/member/{{ m.id }}/free"
+                      onsubmit="return confirm('Free seat {{ m.seat_code }} and archive {{ m.name }}? Their record and receipts are kept, and you can re-add them to any seat later.');"
+                      class="inline-form">
+                  <button type="submit" class="btn btn-sm btn-danger">Free</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Free seats <span class="count-chip">{{ free_seats | length }}</span></h2>
+      {% if not free_seats %}
+        <p class="muted-cell">All seats are currently occupied.</p>
+      {% else %}
+      <div class="free-grid">
+        {% for s in free_seats %}
+        <details class="assign-card">
+          <summary>{{ s.code }} <span class="muted-cell">· {{ s.room }}</span></summary>
+          <form method="post" action="/admin/seat/{{ s.code }}/assign"
+                class="stack-form pass-form" data-monthly="{{ default_fee }}" data-daily="{{ daily_rate }}">
+            <label>Name <input type="text" name="name" required /></label>
+            <label>Phone <input type="text" name="phone" /></label>
+            <label>Address <input type="text" name="address" placeholder="(optional)" /></label>
+            <label>Aadhaar number <input type="text" name="aadhaar" placeholder="(optional)" inputmode="numeric" /></label>
+            <div class="row-2">
+              <label>Pass type
+                <select name="pass_type">
+                  <option value="monthly">Monthly ({{ currency }}{{ default_fee | int }})</option>
+                  <option value="daily">Daily ({{ currency }}{{ daily_rate | int }}/day)</option>
+                </select>
+              </label>
+              <label class="days-field" style="display:none;">Number of days <input type="number" name="days" min="1" value="1" /></label>
+            </div>
+            <div class="row-2">
+              <label>Amount ({{ currency }}) <input type="number" name="amount" step="0.01" value="{{ default_fee }}" required /></label>
+              <label>Caution deposit ({{ currency }}) <input type="number" name="caution" step="0.01" value="{{ default_caution }}" /></label>
+            </div>
+            <label>Mode
+              <select name="mode">
+                {% for mode in modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
+              </select>
+            </label>
+            <label>Transaction ID <input type="text" name="txn_id" placeholder="(blank for cash)" /></label>
+            <div class="row-2">
+              <label>Start date <input type="date" name="period_start" value="{{ today }}" required /></label>
+              <label>Expiry date <input type="date" name="period_end" required /></label>
+            </div>
+            <label>Payment date <input type="date" name="paid_on" value="{{ today }}" required /></label>
+            <button type="submit" class="btn btn-primary">Assign &amp; create receipt</button>
+          </form>
+        </details>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">
+        Returning members <span class="count-chip">{{ archived | length }}</span>
+      </h2>
+      <p class="muted-cell" style="margin-top:0;">
+        Archived members whose seats were freed. Re-add any of them to a free seat —
+        their receipt history is preserved.
+      </p>
+      {% if not archived %}
+        <p class="muted-cell">No archived members.</p>
+      {% elif not free_seats %}
+        <p class="muted-cell">Free up a seat first to re-add a returning member.</p>
+      {% else %}
+      <div class="free-grid">
+        {% for a in archived %}
+        <details class="assign-card">
+          <summary>{{ a.name }}
+            <span class="muted-cell">· last seat {{ a.last_seat_code or "—" }}{% if a.phone %} · {{ a.phone }}{% endif %}</span>
+          </summary>
+          <form method="post" action="/admin/member/{{ a.id }}/reassign"
+                class="stack-form pass-form" data-monthly="{{ default_fee }}" data-daily="{{ daily_rate }}">
+            <label>Seat
+              <select name="seat_code" required>
+                {% for s in free_seats %}<option value="{{ s.code }}">{{ s.code }} · {{ s.room }}</option>{% endfor %}
+              </select>
+            </label>
+            <label>Phone <input type="text" name="phone" value="{{ a.phone or '' }}" /></label>
+            <div class="row-2">
+              <label>Pass type
+                <select name="pass_type">
+                  <option value="monthly">Monthly ({{ currency }}{{ default_fee | int }})</option>
+                  <option value="daily">Daily ({{ currency }}{{ daily_rate | int }}/day)</option>
+                </select>
+              </label>
+              <label class="days-field" style="display:none;">Number of days <input type="number" name="days" min="1" value="1" /></label>
+            </div>
+            <div class="row-2">
+              <label>Amount ({{ currency }}) <input type="number" name="amount" step="0.01" value="{{ default_fee }}" required /></label>
+              <label>Caution deposit ({{ currency }}) <input type="number" name="caution" step="0.01" value="{{ default_caution }}" /></label>
+            </div>
+            <label>Mode
+              <select name="mode">
+                {% for mode in modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
+              </select>
+            </label>
+            <label>Transaction ID <input type="text" name="txn_id" placeholder="(blank for cash)" /></label>
+            <div class="row-2">
+              <label>Start date <input type="date" name="period_start" value="{{ today }}" required /></label>
+              <label>Expiry date <input type="date" name="period_end" required /></label>
+            </div>
+            <label>Payment date <input type="date" name="paid_on" value="{{ today }}" required /></label>
+            <button type="submit" class="btn btn-primary">Re-add &amp; create receipt</button>
+          </form>
+        </details>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>

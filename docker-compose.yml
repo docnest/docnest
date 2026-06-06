@@ -1,0 +1,46 @@
+# DocNest — app + Cloudflare tunnel for students.docnest.co.in
+#
+# 1. Copy .env.example to .env and fill in the secrets (admin password,
+#    session secret, and the Cloudflare tunnel token).
+# 2. In the Cloudflare Zero Trust dashboard, create a tunnel, then add a
+#    public hostname:  students.docnest.co.in  ->  http://app:8000
+# 3. docker compose up -d --build
+#
+# The app is also published on 127.0.0.1:8000 for local admin access.
+
+services:
+  app:
+    build: .
+    image: docnest:latest
+    restart: unless-stopped
+    environment:
+      DOCNEST_ADMIN_USER: ${DOCNEST_ADMIN_USER:-admin}
+      DOCNEST_ADMIN_PASS: ${DOCNEST_ADMIN_PASS:?set a strong admin password in .env}
+      DOCNEST_SECRET: ${DOCNEST_SECRET:?set a random session secret in .env}
+      DOCNEST_DEFAULT_FEE: ${DOCNEST_DEFAULT_FEE:-1000}
+      DOCNEST_BUSINESS_NAME: ${DOCNEST_BUSINESS_NAME:-DocNest Study Space}
+      DOCNEST_CURRENCY: ${DOCNEST_CURRENCY:-₹}
+      DOCNEST_DB: /data/docnest.db
+    volumes:
+      - docnest-data:/data
+    ports:
+      # Local-only admin access; public traffic comes via the tunnel.
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8000/healthz').status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      - app
+
+volumes:
+  docnest-data:

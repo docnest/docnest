@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt {{ r.receipt_no }} — {{ business_name }}</title>
+  <link rel="stylesheet" href="/static/receipt.css" />
+</head>
+<body>
+  <div class="actions no-print">
+    <a href="/admin/member/{{ r.member_id }}" class="btn-back">← Back to member</a>
+    <span class="actions-right">
+      <a href="/admin/invoices#edit-{{ r.receipt_no }}" class="btn-back">✏️ Edit</a>
+      <button type="button" onclick="window.print()" class="btn-print">🖨 Print</button>
+    </span>
+  </div>
+
+  <main class="receipt" id="receipt">
+    <header class="r-head">
+      <div class="r-brand">
+        <h1>{{ business_name }}</h1>
+        <p>{{ business_sub }}</p>
+      </div>
+      <div class="r-meta">
+        <div class="r-no">Receipt <strong>{{ r.receipt_no }}</strong></div>
+        <div class="r-date">Date: {{ r.paid_on | dmy }}</div>
+      </div>
+    </header>
+
+    <section class="r-party">
+      <div>
+        <span class="r-label">Received from</span>
+        <span class="r-value">{{ r.member_name }}</span>
+      </div>
+      <div>
+        <span class="r-label">Seat</span>
+        <span class="r-value">{{ r.seat_code }} · {{ r.room }}</span>
+      </div>
+    </section>
+
+    <table class="r-table">
+      <tbody>
+        <tr>
+          <th>Description</th>
+          <td>
+            {% if r.pass_type == 'daily' %}Daily pass{% elif r.pass_type == 'monthly' %}Monthly pass{% else %}Membership{% endif %}
+            {% if r.period_start or r.period_end %}
+              ({{ r.period_start | dmy or "—" }} → {{ r.period_end | dmy or "—" }})
+            {% endif %}
+            {% if r.note %}<div class="r-note">{{ r.note }}</div>{% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Payment mode</th>
+          <td>{{ r.mode | capitalize }}</td>
+        </tr>
+        {% if r.txn_id %}
+        <tr>
+          <th>Transaction ID</th>
+          <td>{{ r.txn_id }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if r.caution %}
+    <div class="r-breakdown">
+      <div class="r-line-item"><span>Membership fee</span><span>{{ r.amount | money }}</span></div>
+      <div class="r-line-item"><span>Caution deposit (refundable)</span><span>{{ r.caution | money }}</span></div>
+    </div>
+    {% endif %}
+
+    <div class="r-total">
+      <span>{% if r.caution %}Total paid{% else %}Amount paid{% endif %}</span>
+      <span class="r-amount">{{ (r.amount + (r.caution or 0)) | money }}</span>
+    </div>
+
+    <footer class="r-foot">
+      <div class="r-sign">
+        <span class="r-line"></span>
+        <span class="r-label">Authorised signature</span>
+      </div>
+      <p class="r-thanks">Thank you. This is a computer-generated receipt.</p>
+    </footer>
+  </main>
+</body>
+</html>

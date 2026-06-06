@@ -1,0 +1,353 @@
+:root {
+  --bg: #0f1722;
+  --panel: #16202e;
+  --panel-2: #1c2838;
+  --line: #2a3850;
+  --text: #e8eef6;
+  --muted: #93a4ba;
+
+  --avail: #2e7d32;
+  --avail-bg: #1b3a23;
+  --avail-bg-hover: #245030;
+  --avail-border: #3fae54;
+
+  --booked: #c62828;
+  --booked-bg: #2b2230;
+  --booked-border: #7a5560;
+  --booked-text: #c9a9b0;
+
+  --expired-bg: #3a2c16;
+  --expired-border: #b9842f;
+  --expired-text: #e6c489;
+
+  --accent: #4f9dff;
+  --radius: 14px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #1d3050 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, #16323a 0%, transparent 55%),
+    var(--bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.site-header {
+  padding: 28px 20px 10px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.brand-mark {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #6fb1ff, #46e0a0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-sub {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.tagline {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+/* Page / toolbar */
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 8px 20px 40px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  margin: 16px 0 22px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.legend {
+  display: flex;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  display: inline-block;
+  border: 1px solid transparent;
+}
+
+.swatch-available {
+  background: var(--avail-bg);
+  border-color: var(--avail-border);
+}
+
+.swatch-booked {
+  background: var(--booked-bg);
+  border-color: var(--booked-border);
+}
+
+.swatch-expired {
+  background: var(--expired-bg);
+  border-color: var(--expired-border);
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.85rem;
+}
+
+.availability-count {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.refresh-note {
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refresh-note::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #46e0a0;
+  box-shadow: 0 0 0 0 rgba(70, 224, 160, 0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(70, 224, 160, 0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(70, 224, 160, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(70, 224, 160, 0); }
+}
+
+/* Seat map */
+.seatmap {
+  display: grid;
+  gap: 20px;
+}
+
+.room {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.room-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.room-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.room-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 10px;
+}
+
+/* Physical floor plan — seats positioned to match the printed seating chart. */
+.floor-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.floor-door {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Seat tile */
+.seat {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  aspect-ratio: 1 / 1;
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: transform 0.08s ease, background 0.15s ease,
+              border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.seat.available {
+  background: var(--avail-bg);
+  border-color: var(--avail-border);
+  color: #d8ffe2;
+  cursor: default;
+}
+
+.seat.booked {
+  background: var(--booked-bg);
+  border-color: var(--booked-border);
+  color: var(--booked-text);
+  cursor: not-allowed;
+  position: relative;
+  opacity: 0.85;
+}
+
+.seat.expired {
+  background: var(--expired-bg);
+  border-color: var(--expired-border);
+  color: var(--expired-text);
+  position: relative;
+}
+
+.seat.booked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 7px,
+    rgba(198, 40, 40, 0.16) 7px,
+    rgba(198, 40, 40, 0.16) 14px
+  );
+  pointer-events: none;
+}
+
+/* Toast / message */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 0.92rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 50;
+  max-width: min(90vw, 420px);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.error {
+  border-color: #b3433f;
+  background: #2c1f22;
+}
+
+.toast.success {
+  border-color: #3fae54;
+  background: #18301f;
+}
+
+/* Footer */
+.site-footer {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 18px 20px 36px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+  .brand-mark { font-size: 1.6rem; }
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .seat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 8px;
+  }
+  .seat { min-height: 50px; font-size: 0.88rem; }
+}

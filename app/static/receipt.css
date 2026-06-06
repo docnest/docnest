@@ -1,0 +1,135 @@
+:root {
+  --ink: #1f2933;
+  --muted: #5b6772;
+  --border: #d7dde3;
+  --accent: #4527a0;
+  --bg: #eef0f3;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 1.5rem;
+}
+
+.actions {
+  max-width: 600px;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.btn-back, .btn-print {
+  font-size: 0.9rem; font-weight: 600; padding: 0.5rem 1rem;
+  border-radius: 8px; text-decoration: none; cursor: pointer; border: 1px solid var(--border);
+  background: #fff; color: var(--ink);
+}
+.actions-right { display: flex; gap: 0.6rem; align-items: center; }
+.btn-print { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.receipt {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.r-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; margin-bottom: 1.25rem;
+}
+.r-brand h1 { margin: 0; font-size: 1.4rem; color: var(--accent); }
+.r-brand p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.85rem; }
+.r-meta { text-align: right; font-size: 0.85rem; }
+.r-no { font-size: 0.95rem; }
+.r-date { color: var(--muted); margin-top: 0.2rem; }
+
+.r-party { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.r-party > div { display: flex; flex-direction: column; }
+.r-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.r-value { font-size: 1.05rem; font-weight: 600; }
+
+.r-table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; }
+.r-table th, .r-table td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.r-table th { width: 38%; color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.r-note { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+.r-breakdown { margin-bottom: 0.6rem; }
+.r-line-item {
+  display: flex; justify-content: space-between; gap: 1rem;
+  padding: 0.35rem 0.1rem; border-bottom: 1px dashed var(--border); font-size: 0.95rem;
+}
+
+.r-total {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #f6f4fc; border: 1px solid #e0d8f5; border-radius: 8px;
+  padding: 0.9rem 1.1rem; font-weight: 600; margin-bottom: 1.5rem;
+}
+.r-amount { font-size: 1.5rem; color: var(--accent); }
+
+.r-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.r-sign { display: flex; flex-direction: column; gap: 0.3rem; }
+.r-line { display: block; width: 180px; border-top: 1px solid var(--ink); }
+.r-thanks { color: var(--muted); font-size: 0.8rem; margin: 0; }
+
+@media print {
+  /* A4 page margin PLUS inner padding on the receipt. Printers reserve their
+     own unprintable border and some ignore @page; the extra padding keeps text
+     off the edge so nothing breaks/clips near the margin. */
+  @page { size: A4 portrait; margin: 12mm; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Force every colour/background to print, regardless of the browser's
+     "Background graphics" toggle — otherwise light text/fills can drop out
+     and fields look blank on paper. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print { display: none !important; }
+
+  .receipt {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 6mm 8mm;         /* buffer so text never reaches the page edge */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    color: #000;
+    overflow-wrap: break-word; /* long words wrap instead of clipping */
+  }
+
+  /* Belt-and-suspenders: make every field legible even if a printer drops
+     backgrounds entirely. Dark text on white + solid borders for structure. */
+  .r-head { border-bottom: 2px solid #000; }
+  .r-brand h1 { color: #1f1147; }
+  .r-label { color: #333; }
+  .r-brand p, .r-date, .r-note { color: #444; }
+  .r-value, .r-no, .r-table th, .r-table td { color: #000; }
+  .r-table th, .r-table td { border-bottom: 1px solid #999; }
+  .r-total {
+    background: #efe9fb;
+    border: 1.5px solid #000;
+    color: #000;
+  }
+  .r-amount { color: #1f1147; }
+  .r-line { border-top: 1px solid #000; }
+
+  /* Avoid awkward page breaks inside grouped blocks. */
+  .r-head, .r-party, .r-table, .r-total, .r-foot { break-inside: avoid; }
+}

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocNest — {{ member.name }}</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body class="admin-page">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1>{{ member.name }}</h1>
+      <p class="subtitle">Seat {{ member.seat_code }} · {{ member.room }}</p>
+    </div>
+    <nav class="header-nav">
+      <a class="ghost-link" href="/admin">← Dashboard</a>
+      <a class="logout-link" href="/admin/logout">Log out</a>
+    </nav>
+  </header>
+
+  <main class="admin-main two-col">
+    <section class="panel">
+      <h2 class="panel-title">Membership</h2>
+      <dl class="kv">
+        <dt>Name</dt><dd>{{ member.name }}</dd>
+        <dt>Seat</dt><dd>{{ member.seat_code or "—" }}{% if member.room %} ({{ member.room }}){% endif %}</dd>
+        <dt>Phone</dt><dd>{{ member.phone or "—" }}</dd>
+        <dt>Address</dt><dd>{{ member.address or "—" }}</dd>
+        <dt>Aadhaar</dt><dd>{{ member.aadhaar or "—" }}</dd>
+        <dt>Last payment</dt><dd>{{ member.payment_date | dmy or "—" }}</dd>
+        <dt>Start date</dt><dd>{{ member.start_date | dmy or "—" }}</dd>
+        <dt>Expires</dt>
+        <dd>
+          {{ member.expiration_date | dmy or "—" }}
+          {% if member.status_label == 'expired' %}
+            <span class="pill pill-danger">Expired</span>
+          {% elif member.status_label == 'inactive' %}
+            <span class="pill">Archived</span>
+          {% else %}
+            <span class="pill pill-ok">Active</span>
+          {% endif %}
+        </dd>
+        <dt>Standard fee</dt><dd>{{ member.fee | money }}</dd>
+        <dt>Caution deposit</dt><dd>{{ member.caution_deposit | money }}</dd>
+      </dl>
+
+      <details id="edit" class="assign-card" style="margin-top:1rem;" {% if seat_error %}open{% endif %}>
+        <summary>✏️ Edit details</summary>
+        {% if seat_error %}
+        <p class="login-error" style="margin-top:0.6rem;">That seat is already taken by another member. Pick a different seat.</p>
+        {% endif %}
+        <form method="post" action="/admin/member/{{ member.id }}/edit" class="stack-form">
+          <label>Name <input type="text" name="name" value="{{ member.name }}" required /></label>
+          <label>Phone <input type="text" name="phone" value="{{ member.phone or '' }}" /></label>
+          <label>Address <input type="text" name="address" value="{{ member.address or '' }}" /></label>
+          <label>Aadhaar number <input type="text" name="aadhaar" value="{{ member.aadhaar or '' }}" inputmode="numeric" /></label>
+          <label>Seat
+            <select name="seat_code" required>
+              {% for s in seat_options %}
+              <option value="{{ s.code }}" {% if s.code == member.seat_code %}selected{% endif %}>
+                {{ s.code }} · {{ s.room }}{% if s.code == member.seat_code %} (current){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="row-2">
+            <label>Start date <input type="date" name="start_date" value="{{ member.start_date or '' }}" /></label>
+            <label>Expiry date <input type="date" name="expiration_date" value="{{ member.expiration_date or '' }}" required /></label>
+          </div>
+          <label>Caution deposit ({{ currency }}) <input type="number" name="caution_deposit" step="0.01" value="{{ member.caution_deposit or 0 }}" /></label>
+          <p class="muted-cell" style="font-size:0.78rem;margin:0;">Edits the record directly — no receipt is created. Use “Record renewal” to take a payment.</p>
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </form>
+      </details>
+
+      <h2 class="panel-title" style="margin-top:1.5rem;">Record renewal</h2>
+      <form method="post" action="/admin/member/{{ member.id }}/renew"
+            class="stack-form pass-form" data-monthly="{{ default_fee }}" data-daily="{{ daily_rate }}">
+        <div class="row-2">
+          <label>Pass type
+            <select name="pass_type">
+              <option value="monthly">Monthly ({{ currency }}{{ default_fee | int }})</option>
+              <option value="daily">Daily ({{ currency }}{{ daily_rate | int }}/day)</option>
+            </select>
+          </label>
+          <label class="days-field" style="display:none;">Number of days <input type="number" name="days" min="1" value="1" /></label>
+        </div>
+        <div class="row-2">
+          <label>Amount ({{ currency }}) <input type="number" name="amount" step="0.01" value="{{ default_fee }}" required /></label>
+          <label>Mode of payment
+            <select name="mode">
+              {% for mode in modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        <label>Transaction ID <input type="text" name="txn_id" placeholder="(leave blank for cash)" /></label>
+        <div class="row-2">
+          <label>Period start <input type="date" name="period_start" value="{{ suggested_start }}" required /></label>
+          <label>New expiry <input type="date" name="period_end" value="{{ suggested_end }}" required /></label>
+        </div>
+        <label>Payment date <input type="date" name="paid_on" value="{{ today }}" required /></label>
+        <label>Note <input type="text" name="note" placeholder="optional" /></label>
+        <button type="submit" class="btn btn-primary">Record &amp; print receipt</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Receipts <span class="count-chip">{{ payments | length }}</span></h2>
+      {% if not payments %}
+        <p class="muted-cell">No payments recorded yet.</p>
+      {% else %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Receipt</th><th>Paid on</th><th>Amount</th><th>Mode</th><th>Period</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for p in payments %}
+            <tr>
+              <td class="seat-cell">{{ p.receipt_no }}</td>
+              <td>{{ p.paid_on | dmy }}</td>
+              <td>{{ p.amount | money }}{% if p.caution %} <span class="muted-cell">+ {{ p.caution | money }} dep.</span>{% endif %}</td>
+              <td>{{ p.mode }}</td>
+              <td class="muted-cell">{{ p.period_start | dmy or "—" }} → {{ p.period_end | dmy or "—" }}</td>
+              <td><a class="btn btn-sm btn-primary" href="/admin/receipt/{{ p.receipt_no }}" target="_blank">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="/static/admin.js"></script>
+  <script>
+    // Open the Edit panel automatically when arrived at via the "Edit" action (#edit).
+    (function () {
+      if (window.location.hash === "#edit") {
+        var d = document.getElementById("edit");
+        if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      }
+    })();
+  </script>
+</body>
+</html>

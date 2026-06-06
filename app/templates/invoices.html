@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocNest — Invoices</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body class="admin-page">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1>Invoices <span class="badge-admin">receipts</span></h1>
+      <p class="subtitle">Every receipt issued</p>
+    </div>
+    <nav class="header-nav">
+      <a class="ghost-link" href="/admin">← Dashboard</a>
+      <a class="logout-link" href="/admin/logout">Log out</a>
+    </nav>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><span class="stat-num">{{ payments | length }}</span><span class="stat-label">Invoices</span></div>
+    <div class="stat stat-free"><span class="stat-num">{{ total | money }}</span><span class="stat-label">Total collected</span></div>
+  </section>
+
+  <main class="admin-main">
+    <section class="panel">
+      <h2 class="panel-title">All invoices</h2>
+      {% if not payments %}
+        <p class="muted-cell">No invoices yet.</p>
+      {% else %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Receipt</th><th>Date</th><th>Member</th><th>Seat</th>
+              <th>Fee</th><th>Deposit</th><th>Total</th><th>Mode</th>
+              <th class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in payments %}
+            <tr>
+              <td class="seat-cell">{{ p.receipt_no }}</td>
+              <td>{{ p.paid_on | dmy }}</td>
+              <td>
+                <a class="member-link" href="/admin/member/{{ p.member_id }}">{{ p.member_name }}</a>
+                {% if p.member_status and p.member_status != 'active' %}<span class="pill">archived</span>{% endif %}
+              </td>
+              <td class="muted-cell">{{ p.seat_code or "—" }}</td>
+              <td>{{ p.amount | money }}</td>
+              <td class="muted-cell">{{ p.caution | money if p.caution else "—" }}</td>
+              <td>{{ (p.amount + (p.caution or 0)) | money }}</td>
+              <td class="muted-cell">{{ p.mode }}{% if p.txn_id %} · {{ p.txn_id }}{% endif %}</td>
+              <td class="col-actions">
+                <a class="btn btn-sm btn-primary" href="/admin/receipt/{{ p.receipt_no }}" target="_blank">View</a>
+                <button type="button" class="btn btn-sm btn-ghost" data-edit="edit-{{ p.receipt_no }}">Edit</button>
+              </td>
+            </tr>
+            <tr class="edit-row" id="edit-{{ p.receipt_no }}" hidden>
+              <td colspan="9">
+                <form method="post" action="/admin/receipt/{{ p.receipt_no }}/edit" class="stack-form invoice-edit">
+                  <div class="row-2">
+                    <label>Fee ({{ currency }}) <input type="number" name="amount" step="0.01" value="{{ p.amount }}" required /></label>
+                    <label>Caution deposit ({{ currency }}) <input type="number" name="caution" step="0.01" value="{{ p.caution or 0 }}" /></label>
+                  </div>
+                  <div class="row-2">
+                    <label>Mode
+                      <select name="mode">
+                        {% for mode in modes %}<option value="{{ mode }}" {% if mode == p.mode %}selected{% endif %}>{{ mode }}</option>{% endfor %}
+                      </select>
+                    </label>
+                    <label>Transaction ID <input type="text" name="txn_id" value="{{ p.txn_id or '' }}" placeholder="(blank for cash)" /></label>
+                  </div>
+                  <div class="row-2">
+                    <label>Period start <input type="date" name="period_start" value="{{ p.period_start or '' }}" /></label>
+                    <label>Period end <input type="date" name="period_end" value="{{ p.period_end or '' }}" /></label>
+                  </div>
+                  <div class="row-2">
+                    <label>Payment date <input type="date" name="paid_on" value="{{ p.paid_on or today }}" required /></label>
+                    <label>Note <input type="text" name="note" value="{{ p.note or '' }}" placeholder="optional" /></label>
+                  </div>
+                  <p class="muted-cell" style="font-size:0.78rem;margin:0;">Corrects this receipt only — it does not change the member’s current expiry. Use the member’s Edit to adjust that.</p>
+                  <div class="col-actions">
+                    <button type="submit" class="btn btn-sm btn-primary">Save &amp; view receipt</button>
+                    <button type="button" class="btn btn-sm btn-ghost" data-edit="edit-{{ p.receipt_no }}">Cancel</button>
+                  </div>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script>
+    // Toggle the inline edit row for an invoice.
+    document.querySelectorAll("[data-edit]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var row = document.getElementById(btn.getAttribute("data-edit"));
+        if (row) row.hidden = !row.hidden;
+      });
+    });
+    // Arriving from a receipt's "Edit" link (#edit-DN-0001): open that row.
+    (function () {
+      if (window.location.hash.indexOf("#edit-") === 0) {
+        var row = document.getElementById(window.location.hash.slice(1));
+        if (row) { row.hidden = false; row.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      }
+    })();
+  </script>
+</body>
+</html>

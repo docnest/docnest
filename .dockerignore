@@ -1,0 +1,14 @@
+# Build context hygiene
+.git
+.gitignore
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+*.log
+docnest.db
+.env
+.DS_Store
+README.md
+run.sh

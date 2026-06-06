@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>docnest — study space</title>
+  <link rel="stylesheet" href="/static/student.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">docnest</span>
+      <span class="brand-sub">study space</span>
+    </div>
+    <p class="tagline">Live seat availability — green seats are free. To book one, complete payment and we'll reserve it for you.</p>
+  </header>
+
+  <main class="page">
+    <section class="toolbar">
+      <ul class="legend" aria-label="Seat legend">
+        <li class="legend-item">
+          <span class="swatch swatch-available" aria-hidden="true"></span>
+          Available
+        </li>
+        <li class="legend-item">
+          <span class="swatch swatch-booked" aria-hidden="true"></span>
+          Booked
+        </li>
+        <li class="legend-item">
+          <span class="swatch swatch-expired" aria-hidden="true"></span>
+          Expired
+        </li>
+      </ul>
+      <div class="status-bar">
+        <span id="availability-count" class="availability-count"></span>
+        <span id="refresh-note" class="refresh-note">Live · auto-refreshing</span>
+      </div>
+    </section>
+
+    <!--
+      #seatmap is the single re-render target for student.js. The server
+      paints the physical floor plan below; student.js re-renders it from
+      GET /api/seats on load and on every refresh, reusing the embedded
+      layout so seat positions always match the printed seating chart.
+    -->
+    <div id="seatmap" class="seatmap">
+      {% for room in floor_plan %}
+      <section class="room" data-room="{{ room.room }}">
+        <div class="room-head">
+          <h2 class="room-title">{{ room.room }}</h2>
+          <span class="room-meta">
+            {{ room.cells | selectattr('status', 'equalto', 'available') | list | length }}
+            of {{ room.cells | length }} free
+          </span>
+        </div>
+        <div class="floor-grid"
+             style="grid-template-columns: repeat({{ room.cols }}, 1fr); grid-template-rows: repeat({{ room.rows }}, 1fr);">
+          {% for seat in room.cells %}
+          <span class="seat {{ seat.status }}"
+                data-code="{{ seat.code }}"
+                style="grid-column: {{ seat.col }}; grid-row: {{ seat.row }};"
+                title="{% if seat.status == 'booked' %}Booked{% else %}Available{% endif %}"
+          >{{ seat.code }}</span>
+          {% endfor %}
+          {% for door in room.doors %}
+          <span class="floor-door" style="grid-column: {{ door.col }}; grid-row: {{ door.row }};">⌞ door</span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+
+    <script type="application/json" id="floor-plan-data">{{ floor_plan | tojson }}</script>
+  </main>
+
+  <footer class="site-footer">
+    <span>docnest — check availability, pay, and we'll save your seat.</span>
+  </footer>
+
+  <script src="/static/student.js"></script>
+</body>
+</html>
