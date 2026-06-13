@@ -31,6 +31,7 @@ from app.database import (
     public_seats,
     reactivate_member,
     record_payment,
+    swap_seats,
     update_member,
     update_payment,
 )
@@ -586,6 +587,39 @@ def admin_free(request: Request, member_id: int):
     return RedirectResponse(url="/admin", status_code=303)
 
 
+@app.post("/admin/member/{member_id}/restore")
+def admin_restore(request: Request, member_id: int):
+    """Undo a Free: put an archived member back on their last seat unchanged.
+
+    Restores the member's own preserved fee/start/expiry — no new receipt is
+    created. Used to reverse an accidental Free. If their last seat is already
+    taken (or they have none recorded), bounce back without changing anything.
+    """
+    if not is_admin(request):
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+    conn = get_conn()
+    try:
+        member = get_member(conn, member_id)
+        if member is None or member["status"] != "inactive" or not member["last_seat_code"]:
+            return RedirectResponse(url="/admin", status_code=303)
+        try:
+            reactivate_member(
+                conn,
+                member_id=member_id,
+                seat_code=member["last_seat_code"],
+                fee=member["fee"],
+                payment_date=member["payment_date"],
+                start_date=member["start_date"],
+                expiration_date=member["expiration_date"],
+            )
+        except sqlite3.IntegrityError:
+            # Last seat taken since they were freed — leave them archived.
+            return RedirectResponse(url="/admin", status_code=303)
+    finally:
+        conn.close()
+    return RedirectResponse(url="/admin", status_code=303)
+
+
 @app.post("/admin/member/{member_id}/reassign")
 def admin_reassign(
     request: Request,
@@ -642,6 +676,26 @@ def admin_reassign(
     return RedirectResponse(
         url=f"/admin/receipt/{payment['receipt_no']}", status_code=303
     )
+
+
+@app.post("/admin/swap")
+def admin_swap(
+    request: Request,
+    member_a: int = Form(...),
+    member_b: int = Form(...),
+):
+    """Exchange the seats of two active members. No invoices are created."""
+    if not is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    conn = get_conn()
+    try:
+        try:
+            swap_seats(conn, member_a, member_b)
+        except (ValueError, sqlite3.IntegrityError):
+            return RedirectResponse(url="/admin", status_code=303)
+    finally:
+        conn.close()
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 @app.get("/admin/receipt/{receipt_no}")

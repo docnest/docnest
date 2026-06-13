@@ -165,6 +165,32 @@
       </div>
     </section>
 
+    {% if members | length >= 2 %}
+    <section class="panel">
+      <h2 class="panel-title">Swap seats</h2>
+      <p class="muted-cell" style="margin-top:0;">
+        Exchange the seats of two members. Receipts and dates stay with each
+        person — no new invoice is created.
+      </p>
+      <form method="post" action="/admin/swap" class="stack-form"
+            onsubmit="return confirm('Swap the seats of these two members? No new receipt is created.');">
+        <div class="row-2">
+          <label>Member A
+            <select name="member_a" required>
+              {% for m in members %}<option value="{{ m.id }}">{{ m.seat_code }} · {{ m.name }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Member B
+            <select name="member_b" required>
+              {% for m in members %}<option value="{{ m.id }}"{% if loop.index == 2 %} selected{% endif %}>{{ m.seat_code }} · {{ m.name }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary">Swap seats</button>
+      </form>
+    </section>
+    {% endif %}
+
     <section class="panel">
       <h2 class="panel-title">Free seats <span class="count-chip">{{ free_seats | length }}</span></h2>
       {% if not free_seats %}
@@ -225,12 +251,20 @@
       {% elif not free_seats %}
         <p class="muted-cell">Free up a seat first to re-add a returning member.</p>
       {% else %}
+      {% set free_codes = free_seats | map(attribute='code') | list %}
       <div class="free-grid">
         {% for a in archived %}
         <details class="assign-card">
           <summary>{{ a.name }}
             <span class="muted-cell">· last seat {{ a.last_seat_code or "—" }}{% if a.phone %} · {{ a.phone }}{% endif %}</span>
           </summary>
+          {% if a.last_seat_code and a.last_seat_code in free_codes %}
+          <form method="post" action="/admin/member/{{ a.id }}/restore"
+                onsubmit="return confirm('Undo the free: put {{ a.name }} back on seat {{ a.last_seat_code }} with their original dates? No new receipt is created.');"
+                class="inline-form" style="margin-bottom:10px;">
+            <button type="submit" class="btn btn-sm btn-primary">↩ Undo free — restore to {{ a.last_seat_code }} (no receipt)</button>
+          </form>
+          {% endif %}
           <form method="post" action="/admin/member/{{ a.id }}/reassign"
                 class="stack-form pass-form" data-monthly="{{ default_fee }}" data-daily="{{ daily_rate }}">
             <label>Seat

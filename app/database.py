@@ -434,6 +434,38 @@ def reactivate_member(conn, member_id, seat_code, fee, payment_date,
     return get_member(conn, member_id)
 
 
+def swap_seats(conn, member_a_id, member_b_id):
+    """Exchange the seats of two active members. No receipts are touched.
+
+    Done inside one transaction with an intermediate NULL so the partial
+    unique index ``ux_active_seat`` (one active member per seat) is never
+    violated mid-swap. Receipts stay attached to their member via
+    ``payments.member_id``, so invoices are unaffected.
+
+    Returns True on success. Raises ValueError if either member is missing,
+    inactive, or has no seat.
+    """
+    a = get_member(conn, member_a_id)
+    b = get_member(conn, member_b_id)
+    for m in (a, b):
+        if m is None or m["status"] != "active" or not m["seat_code"]:
+            raise ValueError("Both members must be active and seated to swap.")
+    if member_a_id == member_b_id:
+        raise ValueError("Pick two different members to swap.")
+
+    seat_a, seat_b = a["seat_code"], b["seat_code"]
+    try:
+        # Park A's seat so B can take it without tripping the unique index.
+        conn.execute("UPDATE members SET seat_code = NULL WHERE id = ?", (member_a_id,))
+        conn.execute("UPDATE members SET seat_code = ? WHERE id = ?", (seat_a, member_b_id))
+        conn.execute("UPDATE members SET seat_code = ? WHERE id = ?", (seat_b, member_a_id))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return True
+
+
 # --- Payments / receipts ----------------------------------------------------
 
 def next_receipt_no(conn):
