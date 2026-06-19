@@ -124,22 +124,25 @@
     <section class="panel">
       <h2 class="panel-title">Members</h2>
       <div class="table-wrap">
-        <table class="data-table">
+        <table class="data-table sortable-table">
           <thead>
             <tr>
-              <th>Seat</th><th>Name</th><th>Start</th><th>Expires</th>
+              <th class="sortable" data-sort-type="seat" aria-sort="ascending">Seat</th>
+              <th>Name</th>
+              <th class="sortable" data-sort-type="date">Start</th>
+              <th class="sortable" data-sort-type="date">Expires</th>
               <th>Status</th><th class="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for m in members %}
             <tr class="row-{{ m.status_label }}">
-              <td class="seat-cell">{{ m.seat_code }}</td>
+              <td class="seat-cell" data-sort-value="{{ m.seat_code }}">{{ m.seat_code }}</td>
               <td>
                 <a class="member-link" href="/admin/member/{{ m.id }}">{{ m.name }}</a>
               </td>
-              <td class="muted-cell">{{ m.start_date | dmy or "—" }}</td>
-              <td>{{ m.expiration_date | dmy or "—" }}</td>
+              <td class="muted-cell" data-sort-value="{{ m.start_date or '' }}">{{ m.start_date | dmy or "—" }}</td>
+              <td data-sort-value="{{ m.expiration_date or '' }}">{{ m.expiration_date | dmy or "—" }}</td>
               <td>
                 {% if m.status_label == 'expired' %}
                   <span class="pill pill-danger">Expired</span>

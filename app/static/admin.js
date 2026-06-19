@@ -75,6 +75,65 @@
   document.querySelectorAll("form.pass-form").forEach(wire);
 })();
 
+// Sortable tables: click a header marked `.sortable` to reorder rows. Seat
+// columns use natural sort (A2 before A10); date columns sort on the ISO
+// `data-sort-value` (blanks always sink to the bottom). Clicking the active
+// column again flips the direction.
+(function () {
+  function cellValue(row, index) {
+    var cell = row.children[index];
+    if (!cell) return "";
+    var v = cell.getAttribute("data-sort-value");
+    return (v !== null ? v : cell.textContent).trim();
+  }
+
+  function comparator(type, dir) {
+    return function (a, b) {
+      var av = cellValue(a.row, a.index);
+      var bv = cellValue(b.row, b.index);
+      // Empty values always go last, regardless of direction.
+      if (!av && !bv) return 0;
+      if (!av) return 1;
+      if (!bv) return -1;
+      var cmp;
+      if (type === "seat") {
+        cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" });
+      } else {
+        cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      }
+      return dir === "desc" ? -cmp : cmp;
+    };
+  }
+
+  function wire(table) {
+    var headers = Array.prototype.slice.call(
+      table.querySelectorAll("thead th.sortable")
+    );
+    headers.forEach(function (th, i) {
+      // The header's position among all th's is the cell index to read.
+      var index = Array.prototype.indexOf.call(th.parentNode.children, th);
+      var type = th.getAttribute("data-sort-type") || "text";
+      th.addEventListener("click", function () {
+        var current = th.getAttribute("aria-sort");
+        var dir = current === "ascending" ? "desc" : "asc";
+        headers.forEach(function (h) {
+          if (h !== th) h.removeAttribute("aria-sort");
+        });
+        th.setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
+
+        var tbody = table.querySelector("tbody");
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+        rows
+          .map(function (row) { return { row: row, index: index }; })
+          .sort(comparator(type, dir))
+          .forEach(function (item) { tbody.appendChild(item.row); });
+      });
+    });
+  }
+
+  document.querySelectorAll("table.sortable-table").forEach(wire);
+})();
+
 // Renewal reminders: open the member's WhatsApp chat and record the reminder
 // without a full page navigation. Falls back to the plain form POST (which the
 // server redirects to wa.me) when JavaScript is unavailable.

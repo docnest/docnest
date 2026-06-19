@@ -47,7 +47,7 @@ CURRENCY = os.environ.get("DOCNEST_CURRENCY", "₹")  # ₹
 # Default refundable caution deposit, pre-filled on the new-signup form.
 DEFAULT_CAUTION = float(os.environ.get("DOCNEST_DEFAULT_CAUTION", "0"))
 
-PAYMENT_MODES = ["cash", "upi", "card", "bank transfer", "other"]
+PAYMENT_MODES = ["upi", "cash", "card", "bank transfer", "other"]
 
 # Reminders: how many days before expiry a membership shows up as "due", and
 # the default country code prepended to bare local phone numbers for wa.me.

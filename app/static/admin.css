@@ -107,6 +107,11 @@ h2 { margin: 0; }
 .data-table th, .data-table td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .data-table thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .data-table tbody tr:hover { background: #fafbfc; }
+.data-table thead th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.data-table thead th.sortable:hover { color: var(--ink); }
+.data-table thead th.sortable::after { content: "\2195"; opacity: 0.35; margin-left: 0.25em; font-size: 0.85em; }
+.data-table thead th.sortable[aria-sort="ascending"]::after { content: "\2191"; opacity: 0.9; }
+.data-table thead th.sortable[aria-sort="descending"]::after { content: "\2193"; opacity: 0.9; }
 .seat-cell { font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .muted-cell { color: var(--muted); }
 .member-link { color: var(--admin-accent); font-weight: 600; text-decoration: none; }
